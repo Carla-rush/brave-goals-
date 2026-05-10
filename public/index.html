@@ -245,12 +245,6 @@
 
     .input-wrap { margin-bottom: 20px; }
 
-    .screen-question {
-      font-size: 17px;
-      line-height: 1.4;
-      margin-bottom: 10px;
-    }
-
     .screen-hint {
       font-size: 14px;
       color: var(--muted);
@@ -407,28 +401,6 @@
       font-weight: 600;
       text-decoration: underline;
     }
-
-    #loading-state {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 0;
-      gap: 16px;
-    }
-    #loading-state.visible { display: flex; }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid var(--teal-light);
-      border-top-color: var(--teal);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    #card-content { display: none; }
-    #card-content.visible { display: block; }
 
     /* Evidence hint */
     #evidence-hint {
@@ -696,7 +668,7 @@
   <button class="btn btn-outline" onclick="copyCard()" id="copy-btn">Copy my BRAVE summary</button>
 
   <div style="margin-top: 28px;">
-    <div class="input-label" style="font-size:15px; margin-bottom:6px;">Want more of this?</div>
+    <div class="input-label" style="font-size:15px; margin-bottom:6px;">Want more to help achieve your BRAVE goal?</div>
     <p style="font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:12px;">Join my list to get my unfiltered thoughts on what's going on right now in the fitness industry, free coaching tips, resources and first to know about <a href="https://open.spotify.com/show/0qlvjBeb6nu4hq2xKZBF86" target="_blank" style="color:var(--teal-dark); font-weight:600;">new podcast episodes</a>.</p>
     <div style="display:flex; gap:10px;">
       <input type="email" id="email-input" placeholder="your@email.com" style="flex:1;" />
