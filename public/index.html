@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BRAVE Goal Tool</title>
+  <style>
+    :root {
+      --teal: #1a9b9b;
+      --teal-light: #d4f0f0;
+      --teal-dark: #147a7a;
+      --lilac: #c8a2c8;
+      --lilac-light: #f3ecf3;
+      --bg: #fdf7f8;
+      --white: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --error: #dc2626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Progress bar */
+    #progress-bar-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 12px 20px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #progress-track {
+      background: var(--teal-light);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      background: var(--teal);
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+      width: 10%;
+    }
+
+    #progress-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding: 32px 20px 40px;
+      max-width: 560px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .screen.active { display: flex; }
+
+    .screen-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--lilac);
+      margin-bottom: 12px;
+    }
+
+    .btn-back {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-back:hover { color: var(--text); }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .subtext {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* Area + option grids */
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .option-btn {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .option-btn:hover { border-color: var(--teal); }
+    .option-btn.selected {
+      border-color: var(--teal);
+      background: var(--teal-light);
+      color: var(--teal-dark);
+    }
+
+    /* Values grid */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .value-btn {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      color: var(--text);
+    }
+
+    .value-btn:hover { border-color: var(--teal); }
+    .value-btn.selected {
+      border-color: var(--teal);
+      background: var(--teal-light);
+      color: var(--teal-dark);
+    }
+
+    .value-btn.disabled-btn {
+      opacity: 0.4;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* Scale */
+    .scale-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .scale-btn {
+      flex: 1;
+      aspect-ratio: 1;
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text);
+    }
+
+    .scale-btn:hover { border-color: var(--teal); }
+    .scale-btn.selected {
+      border-color: var(--teal);
+      background: var(--teal);
+      color: var(--white);
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* Inputs */
+    textarea, input[type="text"], input[type="email"] {
+      width: 100%;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text);
+      resize: vertical;
+      transition: border-color 0.15s;
+      background: var(--white);
+      outline: none;
+    }
+
+    textarea:focus, input[type="text"]:focus, input[type="email"]:focus {
+      border-color: var(--teal);
+    }
+
+    textarea::placeholder, input::placeholder {
+      color: #c0c4cc;
+      font-weight: 400;
+    }
+
+    textarea { min-height: 100px; }
+
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .input-wrap { margin-bottom: 20px; }
+
+    .screen-question {
+      font-size: 17px;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .screen-hint {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Section divider for values screen */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 4px 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Conditional reveals */
+    .bold-feedback { display: none; margin-bottom: 16px; }
+    .bold-feedback.visible { display: block; }
+
+    .message-box {
+      background: var(--lilac-light);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #7a4f7a;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--teal);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      padding: 16px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s;
+    }
+
+    .btn:hover { background: var(--teal-dark); }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .btn-outline {
+      background: var(--white);
+      color: var(--teal);
+      border: 2px solid var(--teal);
+      margin-top: 10px;
+    }
+    .btn-outline:hover { background: var(--teal-light); }
+
+    .error-msg {
+      color: var(--error);
+      font-size: 13px;
+      margin-bottom: 12px;
+      min-height: 18px;
+    }
+
+    /* Goal card */
+    #goal-card-output {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .card-area-tag {
+      display: inline-block;
+      background: var(--teal-light);
+      color: var(--teal-dark);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 16px 16px 4px;
+    }
+
+    .brave-row {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .brave-row-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .brave-badge {
+      width: 26px;
+      height: 26px;
+      background: var(--teal);
+      color: var(--white);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .brave-badge-lilac { background: var(--lilac); }
+
+    .brave-row-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .brave-row-answer {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .brave-row-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    /* CTA block */
+    .cta-block {
+      background: var(--lilac-light);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .cta-block a {
+      color: var(--teal-dark);
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    #loading-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 0;
+      gap: 16px;
+    }
+    #loading-state.visible { display: flex; }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--teal-light);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #card-content { display: none; }
+    #card-content.visible { display: block; }
+
+    /* Evidence hint */
+    #evidence-hint {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Values counter */
+    #values-counter {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* Email section */
+    #email-success {
+      display: none;
+      color: var(--teal-dark);
+      font-weight: 600;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    /* Area-other reveal */
+    #area-other-wrap { display: none; }
+
+    @media (min-width: 480px) {
+      h1 { font-size: 28px; }
+      .scale-btn { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progress-bar-wrap">
+  <div id="progress-track"><div id="progress-fill"></div></div>
+  <div id="progress-label">1 / 10</div>
+</div>
+
+<!-- ===== SCREEN 1: Area ===== -->
+<div class="screen active" id="screen-1">
+  <div class="screen-label">Let's get started</div>
+  <h1>What area of your life do you want to set a BRAVE goal(s) in?</h1>
+
+  <div class="option-grid">
+    <button class="option-btn" onclick="toggleArea('Performance / Capability')">Performance / Capability</button>
+    <button class="option-btn" onclick="toggleArea('Relationship with food')">Relationship with food</button>
+    <button class="option-btn" onclick="toggleArea('Body image')">Body image</button>
+    <button class="option-btn" onclick="toggleArea('Consistency')">Consistency</button>
+    <button class="option-btn" onclick="toggleArea('Weight management')">Weight management</button>
+    <button class="option-btn" onclick="toggleArea('Body composition')">Body composition</button>
+    <button class="option-btn" onclick="toggleArea('General health')">General health</button>
+    <button class="option-btn" onclick="toggleArea('Mindset')">Mindset</button>
+    <button class="option-btn" onclick="toggleArea('Energy levels')">Energy levels</button>
+    <button class="option-btn" onclick="toggleArea('Stress management')">Stress management</button>
+    <button class="option-btn" onclick="toggleArea('Other')">Other</button>
+  </div>
+
+  <div id="area-other-wrap">
+    <div class="input-wrap">
+      <textarea id="area-other" placeholder="Describe your area…" rows="2" oninput="S.areaOther = this.value"></textarea>
+    </div>
+  </div>
+
+  <div class="error-msg" id="err-1"></div>
+  <button class="btn" onclick="next(1)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 2: Values ===== -->
+<div class="screen" id="screen-2">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">Your values</div>
+  <h1>What matters to you most as a perso?</h1>
+  <p class="subtext">There's no right or wrong answers here - just what feels true for you. Type your own below, or pick from the examples.</p>
+
+  <div class="input-wrap">
+    <div class="input-label">Your values (in your own words)</div>
+    <input type="text" id="values-own" placeholder="e.g. being present for my kids, feeling strong…" oninput="S.valuesOwn = this.value" />
+  </div>
+
+  <div class="or-divider">or pick up to 3 from the list</div>
+  <div id="values-counter">0 / 3 selected</div>
+
+  <div class="values-grid">
+    <button class="value-btn" onclick="toggleValue('Freedom')">Freedom</button>
+    <button class="value-btn" onclick="toggleValue('Health')">Health</button>
+    <button class="value-btn" onclick="toggleValue('Confidence')">Confidence</button>
+    <button class="value-btn" onclick="toggleValue('Family')">Family</button>
+    <button class="value-btn" onclick="toggleValue('Connection')">Connection</button>
+    <button class="value-btn" onclick="toggleValue('Achievement')">Achievement</button>
+    <button class="value-btn" onclick="toggleValue('Fun')">Fun</button>
+    <button class="value-btn" onclick="toggleValue('Honesty')">Honesty</button>
+    <button class="value-btn" onclick="toggleValue('Growth')">Growth</button>
+    <button class="value-btn" onclick="toggleValue('Strength')">Strength</button>
+    <button class="value-btn" onclick="toggleValue('Fitness')">Fitness</button>
+    <button class="value-btn" onclick="toggleValue('Peace')">Peace</button>
+    <button class="value-btn" onclick="toggleValue('Love')">Love</button>
+    <button class="value-btn" onclick="toggleValue('Creativity')">Creativity</button>
+    <button class="value-btn" onclick="toggleValue('Independence')">Independence</button>
+    <button class="value-btn" onclick="toggleValue('Resilience')">Resilience</button>
+    <button class="value-btn" onclick="toggleValue('Balance')">Balance</button>
+    <button class="value-btn" onclick="toggleValue('Purpose')">Purpose</button>
+    <button class="value-btn" onclick="toggleValue('Loyalty')">Loyalty</button>
+    <button class="value-btn" onclick="toggleValue('Integrity')">Integrity</button>
+    <button class="value-btn" onclick="toggleValue('Adventure')">Adventure</button>
+    <button class="value-btn" onclick="toggleValue('Wisdom')">Wisdom</button>
+    <button class="value-btn" onclick="toggleValue('Authenticity')">Authenticity</button>
+    <button class="value-btn" onclick="toggleValue('Joy')">Joy</button>
+    <button class="value-btn" onclick="toggleValue('Belonging')">Belonging</button>
+    <button class="value-btn" onclick="toggleValue('Discipline')">Discipline</button>
+    <button class="value-btn" onclick="toggleValue('Ambition')">Ambition</button>
+    <button class="value-btn" onclick="toggleValue('Gratitude')">Gratitude</button>
+    <button class="value-btn" onclick="toggleValue('Mindfulness')">Mindfulness</button>
+    <button class="value-btn" onclick="toggleValue('Self-respect')">Self-respect</button>
+    <button class="value-btn" onclick="toggleValue('Excellence')">Excellence</button>
+  </div>
+
+  <div class="error-msg" id="err-2"></div>
+  <button class="btn" onclick="next(2)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 3: The Goal ===== -->
+<div class="screen" id="screen-3">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">The goal</div>
+  <h1>What goal would you like to set?</h1>
+  <p class="subtext">Write it below - and we'll walk it through the BRAVE framework together.</p>
+
+  <div class="input-wrap">
+    <textarea id="goal-input" placeholder="Write your goal here…" oninput="S.goal = this.value"></textarea>
+  </div>
+
+  <div class="error-msg" id="err-3"></div>
+  <button class="btn" onclick="next(3)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 4: B — Bold ===== -->
+<div class="screen" id="screen-4">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">B — Bold</div>
+  <h1>Bold means this goal should stretch you - not break you, but challenge.</h1>
+  <p class="subtext">How scary does this feel on a scale of 1–5?</p>
+
+  <div class="scale-row" id="boldness-scale">
+    <button class="scale-btn" onclick="selectScale(1)">1</button>
+    <button class="scale-btn" onclick="selectScale(2)">2</button>
+    <button class="scale-btn" onclick="selectScale(3)">3</button>
+    <button class="scale-btn" onclick="selectScale(4)">4</button>
+    <button class="scale-btn" onclick="selectScale(5)">5</button>
+  </div>
+  <div class="scale-labels">
+    <span>Feels easy</span>
+    <span>Properly terrifying... in a good way!</span>
+  </div>
+
+  <div class="bold-feedback" id="bold-low">
+    <div class="input-wrap">
+      <div class="input-label">That sounds pretty comfortable — what would a slightly stretchier version look like?</div>
+      <textarea id="stretchier-input" placeholder="What would a bolder version look like?" oninput="S.stretchierVersion = this.value"></textarea>
+    </div>
+  </div>
+
+  <div class="bold-feedback" id="bold-high">
+    <div class="message-box">Love it. Growth happens outside the comfort zone!</div>
+  </div>
+
+  <div class="error-msg" id="err-4"></div>
+  <button class="btn" onclick="next(4)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 5: R — Rewarding ===== -->
+<div class="screen" id="screen-5">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">R — Rewarding</div>
+  <h1>Does this goal feel genuinely <em>rewarding</em> to you?</h1>
+  <p class="screen-hint">If yes — describe what will change in your life once you've achieved it. If not — press back and adapt your goal to one that does, then come back to this question!</p>
+
+  <p class="subtext">You are much more likely to follow through on goals that truly mean something to you — opposed to ones that have been imposed upon you. Body autonomy (which is super supportive for a positive body image!) means you get to decide what's worth working towards.</p>
+
+  <div class="input-wrap">
+    <textarea id="rewarding-input" placeholder="What will change in your life once you've achieved it?" oninput="S.rewarding = this.value"></textarea>
+  </div>
+
+  <div class="error-msg" id="err-5"></div>
+  <button class="btn" onclick="next(5)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 6: A — Aligned ===== -->
+<div class="screen" id="screen-6">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">A — Aligned</div>
+    <h1>Is this goal aligned with what you really want?</h1>
+    <p style="font-size: 17px; color: var(--muted); margin-bottom: 20px; line-height: 1.4;">Connect how this goal fits with your future self.</p>
+  <p class="subtext">Picture your ideal relationship with your body, food, and how you want to feel day to day.</p>
+  <p class="subtext" style="margin-bottom: 8px;">Imagine the thoughts, feelings and experiences you would like to embody.</p>
+  <p class="subtext" style="margin-bottom: 6px;">Is this goal aligned with that?</p>
+  <p class="subtext"><em style="font-size: 14px; color: var(--muted);">For example — if you want to feel free around food and calm in your body, a physique photoshoot is not aligned with that version of you.</em></p>
+
+  <div class="input-wrap">
+    <textarea id="aligned-input" placeholder="How does this goal fit with who you want to be?" oninput="S.aligned = this.value"></textarea>
+    <p class="screen-hint" style="margin-top: 8px;"><em>e.g. Because I want future-me to enjoy food again, guilt-free and free from the cycle of starting again on Monday — working on my relationship with food feels very aligned. Future-me doesn't use food as a coping mechanism, and this goal supports that by helping me build other coping strategies.</em></p>
+  </div>
+
+  <div class="error-msg" id="err-6"></div>
+  <button class="btn" onclick="next(6)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 7: V — Values ===== -->
+<div class="screen" id="screen-7">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">V — Values</div>
+  <h1>Does this goal support your values?</h1>
+  <p class="subtext" id="s7-title" style="margin-bottom: 10px;">How does it connect to those?</p>
+  <div class="input-wrap">
+    <textarea id="values-connection-input" placeholder="How does this goal tie in with the things that are important to you?" oninput="S.valuesConnection = this.value"></textarea>
+  </div>
+  <p class="screen-hint"><em>e.g. "Performance goals help me appreciate my body for what it can do, not just how it looks — so my goal of running 10k definitely supports my value of body appreciation and feeling capable."</em></p>
+
+  <div class="error-msg" id="err-7"></div>
+  <button class="btn" onclick="next(7)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 8: E — Evidence ===== -->
+<div class="screen" id="screen-8">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">E — Evidence</div>
+  <h1>How will you measure progress towards your BRAVE goal?</h1>
+  <p class="subtext">Proof of your progress will help you stay motivated, especially on the harder days. When motivation dips, when you face a challenge, when life gets in the way — having evidence of how far you've come can be the thing that keeps you going.</p>
+
+  <div class="input-wrap">
+    <textarea id="evidence-input" placeholder="How will you track your progress?" oninput="S.evidence = this.value"></textarea>
+    <div id="evidence-hint"></div>
+  </div>
+
+  <div class="error-msg" id="err-8"></div>
+  <button class="btn" onclick="next(8)">Next →</button>
+</div>
+
+<!-- ===== SCREEN 9: Planning ===== -->
+<div class="screen" id="screen-9">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">Planning</div>
+  <h1>When things feels hard, busy, or inconvenient - what's one thing you want to remind yourself of?</h1>
+
+  <div class="input-wrap">
+    <textarea id="reminder-input" placeholder="What will you tell yourself?" oninput="S.reminder = this.value"></textarea>
+    <p class="screen-hint" style="margin-top: 8px;"><em>e.g. You have overcome harder days than this. Keep going!</em></p>
+  </div>
+
+  <div class="error-msg" id="err-9"></div>
+  <button class="btn" onclick="generateCard()">Build my BRAVE Goal →</button>
+</div>
+
+<!-- ===== SCREEN 10: Goal Card ===== -->
+<div class="screen" id="screen-10">
+  <button class="btn-back" onclick="goBack()">← Back</button>
+  <div class="screen-label">Your BRAVE Goal</div>
+  <h1>Here it is.</h1>
+
+  <div id="goal-card-output"></div>
+
+  <button class="btn btn-outline" onclick="copyCard()" id="copy-btn">Copy my BRAVE summary</button>
+
+  <div style="margin-top: 28px;">
+    <div class="input-label" style="font-size:15px; margin-bottom:10px;">Send your BRAVE summary to your email as a commitment to your future-self.</div>
+    <div style="display:flex; gap:10px;">
+      <input type="email" id="email-input" placeholder="you@example.com" style="flex:1;" />
+      <button class="btn" style="width:auto; padding: 14px 20px;" onclick="sendEmail()">Send</button>
+    </div>
+    <div id="email-success" style="display:none; color:var(--teal-dark); font-weight:600; font-size:14px; margin-top:8px;">Got it! Check your inbox.</div>
+  </div>
+
+  <div class="cta-block">
+    Need help with your next steps? <a href="https://api.whatsapp.com/message/WG4R2ZF5QAHON1?autoload=1&app_absent=0" target="_blank">Message me on WhatsApp</a> for more information on how I can help with 1-1 coaching, or <a href="https://carla-rush.mykajabi.com/the-freedom-formula" target="_blank">click here</a> to get The Freedom Formula — my signature food relationship and body image programme.
+  </div>
+
+  <button class="btn btn-outline" onclick="restart()" style="margin-top: 16px;">Start over</button>
+</div>
+
+<script>
+  const S = {
+    areas: [],
+    areaOther: '',
+    values: [],
+    valuesOwn: '',
+    goal: '',
+    boldnessScore: null,
+    stretchierVersion: '',
+    rewarding: '',
+    aligned: '',
+    valuesConnection: '',
+    evidence: '',
+    reminder: '',
+  };
+
+  const EVIDENCE = {
+    'Performance / Capability': "e.g. I will track my 100kg hip thrust goal by logging my reps and sets each session in my notes app — if the numbers are going up, I'm progressing.",
+    'Relationship with food':   "e.g. I will keep a weekly log noting how I felt before and after meals, and track how often I ate without guilt, restriction, or compensation.",
+    'Body image':               "e.g. I will track my progress towards my 100kg hip thrust goal by logging my reps and sets each session in my notes app — if the numbers are going up, I'm progressing.",
+    'Consistency':              "e.g. I will track my progress towards my 100kg hip thrust goal by logging my reps and sets each session in my notes app — if the numbers are going up, I'm progressing.",
+    'Weight management':        "e.g. I will track my weight weekly alongside energy levels, strength, and sleep — so I can see the full picture, not just one number.",
+    'Body composition':         "e.g. I will take monthly progress photos and track key lifts — if I look and feel different, and my strength is up, that is evidence.",
+    'General health':           "e.g. I will track my progress towards my 100kg hip thrust goal by logging my reps and sets each session in my notes app — if the numbers are going up, I'm progressing.",
+    'Mindset':                  "e.g. I will track my progress towards my 100kg hip thrust goal by logging my reps and sets each session in my notes app — if the numbers are going up, I'm progressing.",
+    'Energy levels':            "e.g. I will rate my energy out of 10 each day and note sleep quality — I will look for my average improving over a 4-week period.",
+    'Sleep quality':            "e.g. I will track how long it takes to fall asleep, how often I wake, and my morning mood — aiming for gradual improvement month on month.",
+    'Stress management':        "e.g. I will log my stress rating out of 10 each evening and note which coping strategies I used — over time I will see what actually works.",
+    'Other':                    "e.g. I will set a specific, trackable marker — something I can check in on weekly or monthly to see real movement.",
+  };
+
+  let currentScreen = 1;
+
+  function goBack() { goTo(currentScreen - 1); }
+
+  function goTo(n) {
+    document.getElementById("screen-" + currentScreen).classList.remove('active');
+    document.getElementById("screen-" + n).classList.add('active');
+    currentScreen = n;
+    document.getElementById('progress-fill').style.width = (n / 10 * 100) + '%';
+    document.getElementById('progress-label').textContent = n + ' / 10';
+    if (n === 7) updateS7();
+    if (n === 8) updateS8();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function next(from) {
+    const errEl = document.getElementById("err-" + from);
+    errEl.textContent = '';
+
+    if (from === 1) {
+      if (S.areas.length === 0) { errEl.textContent = 'Please pick at least one area.'; return; }
+      if (S.areas.includes('Other') && !S.areaOther.trim()) { errEl.textContent = 'Please describe your area.'; return; }
+    }
+    if (from === 2) {
+      if (S.values.length === 0 && !S.valuesOwn.trim()) {
+        errEl.textContent = 'Please add at least one value — typed or from the list.'; return;
+      }
+    }
+    if (from === 3) {
+      if (!S.goal.trim()) { errEl.textContent = 'Please write your goal.'; return; }
+    }
+    if (from === 4) {
+      if (!S.boldnessScore) { errEl.textContent = 'Please pick a score.'; return; }
+    }
+    if (from === 5) {
+      if (!S.rewarding.trim()) { errEl.textContent = 'Please fill this in.'; return; }
+    }
+    if (from === 6) {
+      if (!S.aligned.trim()) { errEl.textContent = 'Please fill this in.'; return; }
+    }
+    if (from === 7) {
+      if (!S.valuesConnection.trim()) { errEl.textContent = 'Please fill this in.'; return; }
+    }
+    if (from === 8) {
+      if (!S.evidence.trim()) { errEl.textContent = 'Please fill this in.'; return; }
+    }
+
+    goTo(from + 1);
+  }
+
+  function toggleArea(area) {
+    var idx = S.areas.indexOf(area);
+    if (idx > -1) {
+      S.areas.splice(idx, 1);
+    } else {
+      if (S.areas.length >= 3) return;
+      S.areas.push(area);
+    }
+    var count = S.areas.length;
+    document.querySelectorAll('#screen-1 .option-btn').forEach(function(b) {
+      var isSelected = S.areas.includes(b.textContent.trim());
+      b.classList.toggle('selected', isSelected);
+      b.classList.toggle('disabled-btn', !isSelected && count >= 3);
+    });
+    document.getElementById('area-other-wrap').style.display = S.areas.includes('Other') ? 'block' : 'none';
+  }
+
+  function toggleValue(val) {
+    var idx = S.values.indexOf(val);
+    if (idx > -1) {
+      S.values.splice(idx, 1);
+    } else {
+      if (S.values.length >= 3) return;
+      S.values.push(val);
+    }
+    var count = S.values.length;
+    document.querySelectorAll('.value-btn').forEach(function(b) {
+      var isSelected = S.values.includes(b.textContent.trim());
+      b.classList.toggle('selected', isSelected);
+      b.classList.toggle('disabled-btn', !isSelected && count >= 3);
+    });
+    document.getElementById('values-counter').textContent = count + ' / 3 selected';
+  }
+
+  function selectScale(n) {
+    S.boldnessScore = n;
+    document.querySelectorAll('.scale-btn').forEach(function(b, i) {
+      b.classList.toggle('selected', i + 1 === n);
+    });
+    document.getElementById('bold-low').classList.toggle('visible', n <= 2);
+    document.getElementById('bold-high').classList.toggle('visible', n >= 3);
+  }
+
+  function updateS7() {
+    var parts = S.values.slice();
+    if (S.valuesOwn.trim()) parts.unshift(S.valuesOwn.trim());
+    var label, verb;
+    if (parts.length === 0) {
+      label = 'your values'; verb = 'are';
+    } else if (parts.length === 1) {
+      label = parts[0]; verb = 'is';
+    } else {
+      label = parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+      verb = 'are';
+    }
+    document.getElementById('s7-title').textContent = "You mentioned that " + label + " " + verb + " important to you. How does it connect to those?";
+  }
+
+  function updateS8() {
+    var hints = S.areas.map(function(a) { return EVIDENCE[a]; }).filter(Boolean);
+    if (hints.length === 0) hints.push("e.g. a weekly journal entry, a monthly self-check-in");
+    document.getElementById('evidence-hint').textContent = hints.join(' / ');
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function buildCardHtml() {
+    var parts = S.values.slice();
+    if (S.valuesOwn.trim()) parts.unshift(S.valuesOwn.trim());
+    var valuesStr = parts.join(', ');
+    var areasStr = S.areas.map(function(a) { return a === 'Other' ? (S.areaOther || 'Other') : a; }).join(', ');
+
+    var html = '';
+    if (areasStr) html += '<div class="card-area-tag">' + escapeHtml(areasStr) + '</div>';
+
+    var rows = [
+      { badge: 'B', label: 'Bold', meta: S.boldnessScore <= 2 && S.stretchierVersion ? 'Stretchier version considered: ' + S.stretchierVersion : null, answer: S.goal },
+      { badge: 'R', label: 'Rewarding', answer: S.rewarding },
+      { badge: 'A', label: 'Aligned', answer: S.aligned },
+      { badge: 'V', label: 'Values', meta: valuesStr, answer: S.valuesConnection },
+      { badge: 'E', label: 'Evidence', answer: S.evidence },
+      { badge: '↓', label: 'When it gets hard', answer: S.reminder, lilac: true },
+    ];
+
+    rows.forEach(function(row) {
+      html += '<div class="brave-row">';
+      html += '<div class="brave-row-header"><div class="brave-badge' + (row.lilac ? ' brave-badge-lilac' : '') + '">' + row.badge + '</div>';
+      html += '<span class="brave-row-label">' + row.label + '</span></div>';
+      if (row.meta) html += '<p class="brave-row-meta">' + escapeHtml(row.meta + '') + '</p>';
+      html += '<p class="brave-row-answer">' + escapeHtml(row.answer) + '</p>';
+      html += '</div>';
+    });
+
+    return html;
+  }
+
+  function buildCardText() {
+    var parts = S.values.slice();
+    if (S.valuesOwn.trim()) parts.unshift(S.valuesOwn.trim());
+    var areasStr = S.areas.map(function(a) { return a === 'Other' ? (S.areaOther || 'Other') : a; }).join(', ');
+    var lines = ['MY BRAVE GOAL', ''];
+    if (areasStr) lines.push('Area: ' + areasStr, '');
+    lines.push('B — Bold', S.goal, 'Boldness: ' + S.boldnessScore + '/5');
+    if (S.boldnessScore <= 2 && S.stretchierVersion) lines.push('Stretchier version: ' + S.stretchierVersion);
+    lines.push('', 'R — Rewarding', S.rewarding, '', 'A — Aligned', S.aligned);
+    if (parts.length) lines.push('', 'V — Values (' + parts.join(', ') + ')', S.valuesConnection);
+    else lines.push('', 'V — Values', S.valuesConnection);
+    lines.push('', 'E — Evidence', S.evidence, '', 'When it gets hard', S.reminder);
+    return lines.join('\n');
+  }
+
+  function generateCard() {
+    var errEl = document.getElementById('err-9');
+    errEl.textContent = '';
+    if (!S.reminder.trim()) { errEl.textContent = 'Please fill this in.'; return; }
+    goTo(10);
+    document.getElementById('goal-card-output').innerHTML = buildCardHtml();
+  }
+
+  function copyCard() {
+    var text = buildCardText();
+    var btn = document.getElementById('copy-btn');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy goal card'; }, 2000);
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = 'Copy goal card'; }, 2000);
+    }
+  }
+
+  async function sendEmail() {
+    var email = document.getElementById('email-input').value.trim();
+    if (!email) return;
+    try {
+      await fetch('/api/capture-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      document.getElementById('email-success').style.display = 'block';
+    } catch (_) {}
+  }
+
+  function restart() {
+    if (confirm('Start over? Your answers will be cleared.')) location.reload();
+  }
+</script>
+</body>
+</html>
